@@ -55,7 +55,7 @@ export default {
     },
   }),
   beforeCreate() {
-    if (this.$session.exists()) {
+    if (this.$store.state.auth.isLogin) {
       this.$router.push('/');
     }
   },
@@ -63,8 +63,7 @@ export default {
     login() {
       this.axios.post('/login', this.form).then((r) => {
         if (r.data.token) {
-          this.$session.start();
-          this.$session.set('token', r.data.token);
+          localStorage.setItem('token', r.data.token);
           this.$router.push('/');
         }
       });

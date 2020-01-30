@@ -33,6 +33,8 @@ class API
             if($this->input){
                 $auth = new Controllers\AuthController;
                 return $auth->validate_login($this->input);
+            }else{
+                
             }
             
         }else{

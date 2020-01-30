@@ -1,6 +1,7 @@
 import Vue from 'vue';
 import VueRouter from 'vue-router';
 import Home from '../views/Home.vue';
+import store from '../store/index';
 
 Vue.use(VueRouter);
 
@@ -25,9 +26,23 @@ const routes = [
   },
 ];
 
+
 const router = new VueRouter({
   mode: 'history',
   routes,
+});
+
+router.beforeEach(async (request, from, next) => {
+  const guestPage = ['/login'];
+  const AuthRequired = !guestPage.includes(request.path);
+
+  await store.dispatch('check');
+
+  if (AuthRequired && !store.state.auth.isLogin) {
+    next('/login');
+  }
+
+  next();
 });
 
 export default router;

@@ -49,6 +49,7 @@ class AuthController extends Controller
     public function validate_login($input)
     {
         try{
+            JWT::$timestamp = 0;
             $decode = JWT::decode($input['token'],$this->key, array('HS256'));
             
             echo json_encode([

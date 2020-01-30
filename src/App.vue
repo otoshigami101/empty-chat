@@ -1,9 +1,10 @@
 <template>
   <div id="app">
     <v-app>
-        <div id="nav">
+        <div id="nav" v-if="$store.state.auth.isLogin">
             <router-link to="/">Home</router-link> |
-            <router-link to="/about">About</router-link>
+            <router-link to="/about">About</router-link> |
+            <router-link to="#" @click.native="$store.dispatch('logout')">logout</router-link>
         </div>
         <v-content>
           <router-view/>
