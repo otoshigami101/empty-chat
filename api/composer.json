@@ -1,0 +1,19 @@
+{
+    "name": "otoshigami/api",
+    "description": "api for empty chat",
+    "require": {
+        "firebase/php-jwt": "^5.0"
+    },
+    "authors": [
+        {
+            "name": "otoshigami",
+            "email": "daus878.mf@gmail.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+          "Controllers\\":"controllers/",
+          "DB\\":"database/"
+        }
+      }
+}

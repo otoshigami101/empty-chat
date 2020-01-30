@@ -54,10 +54,19 @@ export default {
       password: '',
     },
   }),
+  beforeCreate() {
+    if (this.$session.exists()) {
+      this.$router.push('/');
+    }
+  },
   methods: {
     login() {
       this.axios.post('/login', this.form).then((r) => {
-        console.log(r);
+        if (r.data.token) {
+          this.$session.start();
+          this.$session.set('token', r.data.token);
+          this.$router.push('/');
+        }
       });
     },
   },

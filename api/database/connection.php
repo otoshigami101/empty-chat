@@ -1,4 +1,7 @@
 <?php
+
+    namespace DB;
+
     class Connection{
         
         var $connection;
