@@ -1,6 +1,6 @@
 .DS_Store
-node_modules
-/dist
+/client/node_modules
+/client/dist
 /api/mykey.pem
 /api/mykey.pub
 
