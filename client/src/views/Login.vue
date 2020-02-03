@@ -62,8 +62,8 @@ export default {
   methods: {
     login() {
       this.axios.post('/login', this.form).then((r) => {
-        if (r.data.token) {
-          localStorage.setItem('token', r.data.token);
+        if (r.data.jwt_token) {
+          localStorage.setItem('jwt_token', r.data.jwt_token);
           this.$router.push('/');
         }
       });

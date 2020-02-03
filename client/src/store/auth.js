@@ -1,23 +1,28 @@
 import axios from 'axios';
 
 const auth = {
+  namespaced: true,
   state: {
     isLogin: true,
     user: [],
   },
   actions: {
     check({ state }) {
-      return axios.post('/validate_login', { token: localStorage.getItem('token') })
+      return axios.post('/validate_login', { jwt_token: localStorage.getItem('jwt_token') })
         .then((r) => {
-          state.user = r.data.data;
-          state.isLogin = true;
+          if (r.data.data) {
+            state.user = r.data.data;
+            state.isLogin = true;
+          } else {
+            state.isLogin = false;
+          }
         }).catch((e) => {
           console.log(e);
           state.isLogin = false;
         });
     },
     logout() {
-      localStorage.removeItem('token');
+      localStorage.removeItem('jwt_token');
       window.location.reload();
     },
   },

@@ -20,7 +20,6 @@ class API
     public function initialize()
     {    
         if($this->request == '/login'){
-            http_response_code(200);
 
             if($this->input){
                 $auth = new Controllers\AuthController;
@@ -28,13 +27,10 @@ class API
             }
 
         }elseif($this->request == '/validate_login'){
-            http_response_code(200);
             
             if($this->input){
                 $auth = new Controllers\AuthController;
                 return $auth->validate_login($this->input);
-            }else{
-                
             }
             
         }else{

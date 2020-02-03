@@ -36,7 +36,7 @@ router.beforeEach(async (request, from, next) => {
   const guestPage = ['/login'];
   const AuthRequired = !guestPage.includes(request.path);
 
-  await store.dispatch('check');
+  await store.dispatch('auth/check');
 
   if (AuthRequired && !store.state.auth.isLogin) {
     next('/login');

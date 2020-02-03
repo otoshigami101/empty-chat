@@ -17,6 +17,7 @@ class AuthController extends Controller
 
     public function attempt_login($input)
     {
+
         $username = $this->db->connection->real_escape_string($input['username']);
         $password = $this->db->connection->real_escape_string($input['password']);
         
@@ -38,7 +39,7 @@ class AuthController extends Controller
 
             echo json_encode([
                 'msg' => 'Successfull Login.',
-                'token' => $jwt,
+                'jwt_token' => $jwt,
             ]);
             
         }else{
@@ -50,7 +51,7 @@ class AuthController extends Controller
     {
         try{
             JWT::$timestamp = 0;
-            $decode = JWT::decode($input['token'],$this->key, array('HS256'));
+            $decode = JWT::decode($input['jwt_token'],$this->key, array('HS256'));
             
             echo json_encode([
                 'msg' => 'Access granted.',
