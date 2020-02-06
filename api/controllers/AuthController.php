@@ -24,7 +24,7 @@ class AuthController extends Controller
         $login = $this->get('users','where 
             username = "'.$username.'" and 
             password = "'.$password.'"')->row();
-
+        
         if($login->id){
             $token = array(
                 "iss" => $this->iss,
