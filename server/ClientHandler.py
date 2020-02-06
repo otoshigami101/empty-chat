@@ -5,6 +5,7 @@ import json
 import struct
 from hashlib import sha1
 from ChatHandler import Chat
+import requests
 
 
 class Client:
@@ -19,6 +20,18 @@ class Client:
 
     def __init__(self, LOCK):
         self.lock = LOCK
+
+    def chat_broadcast(self):
+        for client in self.clients:
+            try:
+                # broadcast chat
+                chat = Chat(self.clients[client]['uid'])
+                chats = chat.getChats()
+                self.lock.acquire()
+                self.send_data(client, chats)
+                self.lock.release()
+            except Exception as e:
+                print("[-] Failed to send chat broadcast : "+str(e))
 
     def recv_data(self, client):
         # Turn string values into opererable numeric byte values
@@ -135,12 +148,12 @@ class Client:
                 client.send(answer)
                 print("[+] Response Sent.")
 
-                # jwt token for API
-                jwt_token = re.search(
-                    'jwt_token=(.*?)[\\s]', data).groups()[0].strip()
+                # get user id
+                uid = re.search(
+                    'uid=(.*?)[\\s]', data).groups()[0].strip()
 
                 self.lock.acquire()
-                self.clients[client] = {'jwt_token': jwt_token}
+                self.clients[client] = {'uid': uid}
                 self.lock.release()
 
                 return True
@@ -152,23 +165,31 @@ class Client:
         if(self.handShake(client)):
             try:
                 while 1:
-
                     data = json.loads(self.recv_data(client))
+                    chat = Chat(self.clients[client]['uid'])
 
                     self.lock.acquire()
-                    
-                    chat = Chat(self.clients[client]['jwt_token'])
                     if data['request'] == 'chats':
                         print('[+] Request chats from '+str(addr))
                         response = chat.getChats()
+                    elif data['request'] == 'send_chat':
+                        if data['userId'] & data['message']:
+                            print('[+] Sending chat from '+str(addr))
+                            response = chat.sendChat(
+                                data['userId'], data['message'])
+                            if "failed" not in response:
+                                self.chat_broadcast()
+
+                        else:
+                            response = "Invalid request."
                     else:
                         response = "invalid request in received."
 
                     self.lock.release()
-
                     self.send_data(client, response)
 
-            except:
+            except Exception as e:
+                print("[-] Exception : "+str(e))
                 self.lock.acquire()
                 del self.clients[client]
                 self.lock.release()

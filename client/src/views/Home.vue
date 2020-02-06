@@ -5,30 +5,23 @@
       <v-row justify="center">
         <v-col md="8" xs="12">
           <v-card>
-            <v-card-title>
-              Chat
-            </v-card-title>
+            <v-card-title>Chat</v-card-title>
             <v-card-text>
-               <v-list subheader>
-                <v-subheader>User</v-subheader>
-                <v-list-item @click="getChats">
-                  <v-list-item-avatar>
-                    <v-img src="https://cdn.vuetifyjs.com/images/lists/3.jpg"></v-img>
-                  </v-list-item-avatar>
-
-                  <v-list-item-content class="text-left">
-                    <v-list-item-title v-text="'username'"></v-list-item-title>
-                  </v-list-item-content>
-                  <v-list-item-icon>
-                    <v-icon :color="true ? 'green' : 'grey'">mdi-chat</v-icon>
-                  </v-list-item-icon>
-                </v-list-item>
-              </v-list>
               <div v-if="isConnectedWS">
-                <label for="">
-                  Server Message :
-                </label>
-                <div>{{ serverWSmsg.data }}</div>
+                <v-list subheader v-if="chats.length">
+                  <v-subheader>Recent Chat</v-subheader>
+                  <v-list-item v-for="chat in chats" :key="chat.id">
+                    <v-list-item-content class="text-left">
+                      <v-list-item-title v-text="chat.username"></v-list-item-title>
+                    </v-list-item-content>
+                    <v-list-item-icon>
+                      <v-icon :color="true ? 'green' : 'grey'">mdi-chat</v-icon>
+                    </v-list-item-icon>
+                  </v-list-item>
+                </v-list>
+                <div class="text-center" v-else>
+                    No chats found.
+                </div>
               </div>
             </v-card-text>
           </v-card>
@@ -53,8 +46,13 @@ export default {
     isConnectedWS() {
       return this.$store.getters.isConnectedWS;
     },
-    serverWSmsg() {
-      return this.$store.getters.serverWSmsg;
+    chats() {
+      if (this.$store.getters.serverWSmsg.data) {
+        if (JSON.parse(this.$store.getters.serverWSmsg.data).chats) {
+          return JSON.parse(this.$store.getters.serverWSmsg.data).chats;
+        }
+      }
+      return [];
     },
   },
   watch: {

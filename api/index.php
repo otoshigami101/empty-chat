@@ -2,7 +2,6 @@
 
 require 'vendor/autoload.php';
 
-header('Access-Control-Allow-Origin:  http://localhost:8080');
 header('Access-Control-Allow-Methods: *');
 header('Access-Control-Allow-Headers: *');
 header('Content-Type: application/json');
@@ -20,6 +19,7 @@ class API
     public function initialize()
     {    
         if($this->request == '/login'){
+            header('Access-Control-Allow-Origin:  http://localhost:8080');
 
             if($this->input){
                 $auth = new Controllers\AuthController;
@@ -27,10 +27,19 @@ class API
             }
 
         }elseif($this->request == '/validate_login'){
-            
+            header('Access-Control-Allow-Origin:  http://localhost:8080');
+
             if($this->input){
                 $auth = new Controllers\AuthController;
                 return $auth->validate_login($this->input);
+            }
+            
+        }elseif($this->request == '/user'){
+            header('Access-Control-Allow-Origin:  ws://localhost:4444');
+
+            if($this->input){
+                $user = new Controllers\UserController;
+                return $user->show($this->input['id']);
             }
             
         }else{

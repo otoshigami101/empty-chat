@@ -1,60 +1,81 @@
-import requests
+#!/usr/bin/env python
+
 import os
-import fnmatch
 from datetime import datetime
+import json
+import re
+import requests
 
 
 class Chat:
 
-    api = 'http://localhost:8081'
-    chat_dir = '/chats'
+    root_dir = 'chats'
+    api_server = 'http://localhost:8081'
+    api_headers = {
+        "Host": "localhost:8081",
+        "Origin": "ws://localhost:4444",
+        "X-Requested-With": "XMLHttpRequest",
+    }
 
-    def __init__(self, jwt_token):
-        self.jwt_token = jwt_token
-        self.initUser()
+    def __init__(self, uid):
+        self.uid = uid
 
-    def initUser(self):
+    def initChat(self, uid):
         try:
-            r = requests.post(self.api+'/validate_login', json={
-                "jwt_token": self.jwt_token
-            }).json()
-            self.user = r['data']
+            # user id as dir of chat
+            if(os.path.isdir(self.root_dir+'/'+uid) == False):
+                os.mkdir(self.root_dir+'/'+uid)
+
+            return True
+        except Exception as e:
+            print("[-] Error when intialize chat : "+str(e))
+            return False
+
+    def sendChat(self, receiverId, message):
+        if self.initChat(self.uid) & self.initChat(receiverId):
+            try:
+                timestamp = datetime.today().strftime('%Y%m%d%%H%M%S')
+
+                # write to sender file & receiver id as filename
+                with open(self.root_dir+'/'+self.uid+'/'+receiverId+".txt", 'a') as f:
+                    f.write('\n'
+                            + timestamp + ','
+                            + self.uid + ','
+                            + message
+                            )
+
+                # write to receiver file & sender id as filename
+                with open(self.root_dir+'/'+receiverId+'/'+self.uid+".txt", 'a') as f:
+                    f.write('\n'
+                            + timestamp + ','
+                            + self.uid + ','
+                            + message
+                            )
+
+                return "[+] file created."
+
+            except Exception as e:
+                print('[-] Exception : '+str(e))
+
+        return "[-] failed to send message"
+
+    def getChats(self):
+        chats = []
+
+        try:
+            for root, dirs, files in os.walk(self.root_dir+'/'+self.uid):
+                for filename in files:
+                    if filename.endswith('.txt'):
+                        # get user data from filename as id user
+                        user = requests.post(self.api_server+'/user', json={
+                            "id": int(re.sub('.txt', '', filename))
+                        }, headers=self.api_headers).json()
+
+                        chats.append(
+                            {'id': user['id'], 'name': user['name'], 'username': user['username']})
 
         except Exception as e:
-            print("[+] Error when intialize user : "+str(e))
+            print('[-] Exception : '+str(e))
+            return "[-] failed to get chats"
 
-    def sendChat(self, userId, message):
-
-        timestamp = datetime.today().strftime('%Y%m%d%%H%M%S')
-        # write to sender file
-        with open(self.chat_dir+"/"+self.user['id'], 'a') as f:
-            f.write('\n'
-                    + timestamp + ','
-                    + self.user['id'] + ','
-                    + message
-                    )
-
-            print(f.read())
-
-        # write to receiver file & make receiver id as filename
-        with open(self.chat_dir+"/"+userId, 'a') as f:
-            f.write('\n'
-                    + timestamp + ','
-                    + self.user['id'] + ','
-                    + message
-                    )
-            
-            print(f.read())
-        
-
-
-    def getChats(self):        
-
-        if(os.path.exists(self.chat_dir+"/"+self.user['id'])):
-            response = fnmatch.filter(os.listdir(
-            self.chat_dir+"/"+self.user['id']), '*.txt')
-        else:
-            response = 'Chat Not Found.'
-
-
-        return response
+        return json.dumps({'chats': chats})

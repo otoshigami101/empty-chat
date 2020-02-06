@@ -1,5 +1,6 @@
 import Vue from 'vue';
 import VueRouter from 'vue-router';
+import VueNativeSock from 'vue-native-websocket';
 import Home from '../views/Home.vue';
 import store from '../store/index';
 
@@ -38,9 +39,14 @@ router.beforeEach(async (request, from, next) => {
 
   await store.dispatch('auth/check');
 
+
   if (AuthRequired && !store.state.auth.isLogin) {
     next('/login');
   }
+
+  Vue.use(VueNativeSock, `ws://localhost:4444?uid=${store.state.auth.user.id}`, {
+    store,
+  });
 
   next();
 });
