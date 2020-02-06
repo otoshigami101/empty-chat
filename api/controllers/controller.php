@@ -52,7 +52,7 @@ class Controller
                 $result = $this->db->statement($this->sql);
 
                 if(is_string($result) and !strpos($result,'ERROR')){
-                    return $result.' SQL:'.$sql;
+                    return $result.' SQL:'.$this->sql;
                     exit();
                 }
 
@@ -62,13 +62,49 @@ class Controller
             function row(){
                 $this->sql = 'SELECT * FROM '.$this->table.' '.$this->condition.' limit 1';
                 $result = $this->db->statement($this->sql);
-
+                
                 if(is_string($result) and !strpos($result,'ERROR')){
-                    return $result.' SQL:'.$sql;
+                    return $result.' SQL:'.$this->sql;
                     exit();
                 }
 
                 return (object)$result->fetch_assoc();
+            }
+
+            function select($fields){
+                $columns = '';
+                foreach($fields as $key => $field){
+                    if($key < (count($fields)-1) and count($fields) > 1){
+                        $columns .= $this->db->connection->real_escape_string($field) . ',';
+                    }else{
+                        $columns .= $this->db->connection->real_escape_string($field);
+                    }
+                }
+                $this->sql = 'SELECT '.$columns.' FROM '.$this->table.' '.$this->condition;
+                $result = $this->db->statement($this->sql);
+                if(is_string($result) and !strpos($result,'ERROR')){
+                    return $result.' SQL:'.$this->sql;
+                    exit();
+                }
+                return new class($result){
+
+                    public function __construct($result) {
+                        $this->result = $result;
+                    }
+                    public function row()
+                    {
+                        return (object)$this->result->fetch_assoc();
+                    }
+                    public function toArray()
+                    {
+                        $result = [];
+                        while($row = $this->result->fetch_array(MYSQLI_BOTH)){
+                            $result[] = $row;
+                        };
+
+                        return $result;
+                    }
+                };
             }
 
             function count(){
@@ -76,12 +112,13 @@ class Controller
                 $result = $this->db->statement($this->sql);
 
                 if(is_string($result) and !strpos($result,'ERROR')){
-                    return $result.' SQL:'.$sql;
+                    return $result.' SQL:'.$this->sql;
                     exit();
                 }
 
                 return (int)$result->num_rows;
             }
+            
         };
         
         $wish->init($table,$condition);

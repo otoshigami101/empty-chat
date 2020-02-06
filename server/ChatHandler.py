@@ -9,7 +9,7 @@ import requests
 
 class Chat:
 
-    root_dir = 'chats'
+    chat_dir = 'chats'
     api_server = 'http://localhost:8081'
     api_headers = {
         "Host": "localhost:8081",
@@ -23,47 +23,19 @@ class Chat:
     def initChat(self, uid):
         try:
             # user id as dir of chat
-            if(os.path.isdir(self.root_dir+'/'+uid) == False):
-                os.mkdir(self.root_dir+'/'+uid)
+            if(os.path.isdir(self.chat_dir+'/'+uid) == False):
+                os.mkdir(self.chat_dir+'/'+uid)
 
             return True
         except Exception as e:
             print("[-] Error when intialize chat : "+str(e))
             return False
 
-    def sendChat(self, receiverId, message):
-        if self.initChat(self.uid) & self.initChat(receiverId):
-            try:
-                timestamp = datetime.today().strftime('%Y%m%d%%H%M%S')
-
-                # write to sender file & receiver id as filename
-                with open(self.root_dir+'/'+self.uid+'/'+receiverId+".txt", 'a') as f:
-                    f.write('\n'
-                            + timestamp + ','
-                            + self.uid + ','
-                            + message
-                            )
-
-                # write to receiver file & sender id as filename
-                with open(self.root_dir+'/'+receiverId+'/'+self.uid+".txt", 'a') as f:
-                    f.write('\n'
-                            + timestamp + ','
-                            + self.uid + ','
-                            + message
-                            )
-
-                return "[+] file created."
-
-            except Exception as e:
-                print('[-] Exception : '+str(e))
-
-        return "[-] failed to send message"
-
     def getChats(self):
         chats = []
 
         try:
-            for root, dirs, files in os.walk(self.root_dir+'/'+self.uid):
+            for root, dirs, files in os.walk(self.chat_dir+'/'+self.uid):
                 for filename in files:
                     if filename.endswith('.txt'):
                         # get user data from filename as id user
@@ -79,3 +51,51 @@ class Chat:
             return "[-] failed to get chats"
 
         return json.dumps({'chats': chats})
+
+    def getChat(self, userId):
+        filepath = self.chat_dir+'/'+self.uid+'/'+userId+'.txt'
+        conversations = []
+        try:
+            with open(filepath, 'r') as file:
+                chat = file.readline().split(',')
+                while chat:
+                    conversations.append({
+                        'time': chat[0],
+                        'sender': chat[1],
+                        'msg': chat[2],
+                    })
+                    chat = file.readline().split(',')
+
+        except:
+            pass
+        
+        return json.dumps({'conversations': conversations})
+        
+
+    def sendChat(self, receiverId, message):
+        if self.initChat(self.uid) & self.initChat(receiverId):
+            try:
+                timestamp = datetime.today().strftime('%Y%m%d% %H:%M:%S')
+
+                # write to sender file & receiver id as filename
+                with open(self.chat_dir+'/'+self.uid+'/'+receiverId+".txt", 'a') as f:
+                    f.write(
+                            timestamp + ','
+                            + self.uid + ','
+                            + message+'\n'
+                            )
+
+                # write to receiver file & sender id as filename
+                with open(self.chat_dir+'/'+receiverId+'/'+self.uid+".txt", 'a') as f:
+                    f.write(
+                            timestamp + ','
+                            + self.uid + ','
+                            + message + '\n'
+                            )
+
+                return "[+] file created."
+
+            except Exception as e:
+                print('[-] Exception : '+str(e))
+
+        return "[-] failed to send message"

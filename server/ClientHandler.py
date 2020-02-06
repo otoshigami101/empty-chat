@@ -21,18 +21,6 @@ class Client:
     def __init__(self, LOCK):
         self.lock = LOCK
 
-    def chat_broadcast(self):
-        for client in self.clients:
-            try:
-                # broadcast chat
-                chat = Chat(self.clients[client]['uid'])
-                chats = chat.getChats()
-                self.lock.acquire()
-                self.send_data(client, chats)
-                self.lock.release()
-            except Exception as e:
-                print("[-] Failed to send chat broadcast : "+str(e))
-
     def recv_data(self, client):
         # Turn string values into opererable numeric byte values
         stringStreamIn = client.recv(4096)
@@ -72,7 +60,6 @@ class Client:
         """
         Encode and send a WebSocket message
         """
-
         s = data
 
         # Empty message to start with
@@ -116,14 +103,20 @@ class Client:
 
         # Append payload to message
         message += payload
-
-        self.lock.acquire()
         try:
             client.send(str(message))
         except:
             print("error sending to a client")
 
-        self.lock.release()
+    def chat_broadcast(self):
+        for client in self.clients:
+            try:
+                # broadcast chat
+                chat = Chat(self.clients[client]['uid'])
+                chats = chat.getChats()
+                self.send_data(client, chats)
+            except Exception as e:
+                print("[-] Failed to send chat broadcast : "+str(e))
 
     def handShake(self, client):
         data = client.recv(4096)
@@ -169,24 +162,75 @@ class Client:
                     chat = Chat(self.clients[client]['uid'])
 
                     self.lock.acquire()
+
                     if data['request'] == 'chats':
                         print('[+] Request chats from '+str(addr))
                         response = chat.getChats()
+                    elif data['request'] == 'conversations':
+                        print('[+] Request conversations from '+str(addr))
+                        if data['userId']:
+                            response = chat.getChat(data['userId'])
+                        else:
+                            response = json.dumps({ "errors" : "Invalid Request"})
+
                     elif data['request'] == 'send_chat':
-                        if data['userId'] & data['message']:
-                            print('[+] Sending chat from '+str(addr))
+                        if data['userId'] and data['message']:
+                            print('[+] Receive chat from '+str(addr))
                             response = chat.sendChat(
                                 data['userId'], data['message'])
-                            if "failed" not in response:
-                                self.chat_broadcast()
 
+                            if "failed" not in response:
+                                self.lock.release()
+                                
+                                print('[+] Refreshing chat & conversation')
+                                sender_id = self.clients[client]['uid']
+                                receiver_id = data['userId']
+                                
+                                #refresh chat and conversation for sender
+                                chats = chat.getChats()
+                                self.lock.acquire()
+                                self.send_data(client, chats)
+                                self.lock.release()
+
+                                conversation = chat.getChat(receiver_id)
+                                self.lock.acquire()
+                                self.send_data(client, conversation)
+                                self.lock.release()
+                                
+                                self.lock.acquire()
+                                for client_receiver in self.clients:
+                                    if(self.clients[client_receiver]['uid'] == receiver_id):
+                                        self.lock.release()
+                                        chat = Chat(receiver_id)
+                                        
+                                        #refresh chat and conversation for receiver
+                                        chats = chat.getChats()
+                                        
+                                        self.lock.acquire()
+                                        self.send_data(client_receiver, chats)
+                                        self.lock.release()
+                                        
+                                        conversation = chat.getChat(sender_id)
+                                        
+                                        self.lock.acquire()
+                                        self.send_data(client_receiver, conversation)
+                                        self.lock.release()
+                            
+                                print("[+] Chat & Conversation Refreshed. \n\n\n")
+                                continue
+
+                            else:
+                                response = json.dumps({ "errors" : "Failed to send chat."})    
                         else:
-                            response = "Invalid request."
+                            response = json.dumps({ "errors" : "Invalid Request"})
                     else:
-                        response = "invalid request in received."
+                        response = json.dumps({ "errors" : "Invalid Request"})
 
                     self.lock.release()
+
+                    self.lock.acquire()
                     self.send_data(client, response)
+                    self.lock.release()
 
             except Exception as e:
                 print("[-] Exception : "+str(e))
