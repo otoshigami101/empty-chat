@@ -41,12 +41,12 @@
               <div>
                 <v-list v-if="chats.length">
                   <v-list-item v-for="chat in chats" :key="chat.id"
-                  @click="startChat(chat.id)">
+                  @click="startChat(chat.id); chat.status = 'read'">
                     <v-list-item-content class="text-left">
                       <v-list-item-title v-text="chat.username"></v-list-item-title>
                     </v-list-item-content>
                     <v-list-item-icon>
-                      <v-icon :color="true ? 'green' : 'grey'">mdi-chat</v-icon>
+                      <v-icon :color="chat.status == 'sent' ? 'green' : 'gray'">mdi-chat</v-icon>
                     </v-list-item-icon>
                   </v-list-item>
                 </v-list>
@@ -84,7 +84,7 @@
                       </div>
                     </v-col>
                 </v-row>
-                <div v-if="conversations.length == 0">
+                <div v-if="!current_chat.id">
                   <v-icon x-large>
                       mdi-chat
                     </v-icon>
@@ -94,7 +94,7 @@
                 </div>
               </v-card-text>
             <v-divider></v-divider>
-            <v-card-actions v-if="conversations.length > 0">
+            <v-card-actions v-if="current_chat.id">
                 <v-text-field
                 placeholder="Type a message..."
                 outlined
@@ -247,11 +247,13 @@ export default {
       handler(msg) {
         if (msg.data) {
           if (JSON.parse(msg.data).conversations) {
-            this.conversations = JSON.parse(msg.data).conversations;
-            this.sendingChat = false
-            this.$nextTick(() => {
-              this.focusNewChat()
-            })
+            if(this.current_chat.id){
+              this.conversations = JSON.parse(msg.data).conversations;
+              this.sendingChat = false
+              this.$nextTick(() => {
+                this.focusNewChat()
+              })
+            }
           } else if (JSON.parse(msg.data).chats) {
             this.chats = JSON.parse(msg.data).chats;
           }

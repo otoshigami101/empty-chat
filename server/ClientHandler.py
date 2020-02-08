@@ -144,7 +144,7 @@ class Client:
                     'uid=(.*?)[\\s]', data).groups()[0].strip()
 
                 self.lock.acquire()
-                self.clients[client] = {'uid': uid}
+                self.clients[client] = {'uid': uid, 'current_conversation': ''}
                 self.lock.release()
 
                 return True
@@ -168,7 +168,9 @@ class Client:
                     elif data['request'] == 'conversations':
                         print('[+] Request conversations from '+str(addr))
                         if data['userId']:
+                            chat.getChat(data['userId'])
                             response = chat.getChat(data['userId'])
+                            self.clients[client]['current_conversation'] = data['userId']
                         else:
                             response = json.dumps({ "errors" : "Invalid Request"})
 
@@ -185,33 +187,35 @@ class Client:
                                 sender_id = self.clients[client]['uid']
                                 receiver_id = data['userId']
                                 
-                                #refresh chat and conversation for sender
-                                chats = chat.getChats()
-                                self.lock.acquire()
-                                self.send_data(client, chats)
-                                self.lock.release()
-
+                                #refresh conversation and chats for sender
                                 conversation = chat.getChat(receiver_id)
                                 self.lock.acquire()
                                 self.send_data(client, conversation)
+                                self.lock.release()
+
+                                chats = chat.getChats()
+                                self.lock.acquire()
+                                self.send_data(client, chats)
                                 self.lock.release()
                                 
                                 for client_receiver in self.clients:
                                     if(self.clients[client_receiver]['uid'] == receiver_id):
                                         
-                                        #refresh chat and conversation for receiver
+                                        #refresh conversation & chats for receiver
                                         chat = Chat(receiver_id)
-                                        chats = chat.getChats()
                                         
+                                        if(self.clients[client_receiver]['current_conversation'] == sender_id):
+                                            conversation = chat.getChat(sender_id)
+                                            self.lock.acquire()
+                                            self.send_data(client_receiver, conversation)
+                                            self.lock.release()
+
+                                        
+                                        chats = chat.getChats()
                                         self.lock.acquire()
                                         self.send_data(client_receiver, chats)
                                         self.lock.release()
                                         
-                                        conversation = chat.getChat(sender_id)
-                                        
-                                        self.lock.acquire()
-                                        self.send_data(client_receiver, conversation)
-                                        self.lock.release()
 
                                 print("[+] Chat & Conversation Refreshed. \n\n\n")
                                 continue
