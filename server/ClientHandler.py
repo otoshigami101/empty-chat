@@ -7,7 +7,6 @@ from hashlib import sha1
 from ChatHandler import Chat
 import requests
 
-
 class Client:
     websocket_answer = (
         'HTTP/1.1 101 Switching Protocols',
@@ -15,7 +14,7 @@ class Client:
         'Connection: Upgrade',
         'Sec-WebSocket-Accept: {key}\r\n\r\n',
     )
-    client_allowed = {"http://localhost:8080", "http://localhost:8082"}
+    client_allowed = {"http://localhost:8080", "http://192.168.43.179:8080"}
     clients = {}
 
     def __init__(self, LOCK):
@@ -23,7 +22,7 @@ class Client:
 
     def recv_data(self, client):
         # Turn string values into opererable numeric byte values
-        stringStreamIn = client.recv(4096)
+        stringStreamIn = client.recv(9999)
         byteArray = [ord(character) for character in stringStreamIn]
         datalength = byteArray[1] & 127
         indexFirstMask = 2
@@ -42,8 +41,8 @@ class Client:
         i = indexFirstDataByte
         j = 0
 
-        self.lock.acquire()
         # Loop through each byte that was received
+        self.lock.acquire()
         while i < len(byteArray):
 
             # Unmask this byte and add to the decoded buffer
@@ -51,9 +50,8 @@ class Client:
             i += 1
             j += 1
 
-        # Return the decoded string
         self.lock.release()
-
+        # Return the decoded string
         return decodedChars
 
     def send_data(self, client, data):
@@ -158,9 +156,10 @@ class Client:
         if(self.handShake(client)):
             try:
                 while 1:
-                    data = json.loads(self.recv_data(client))
+                    recv = self.recv_data(client)
+                    
+                    data = json.loads(recv)
                     chat = Chat(self.clients[client]['uid'])
-
                     self.lock.acquire()
 
                     if data['request'] == 'chats':
@@ -197,13 +196,11 @@ class Client:
                                 self.send_data(client, conversation)
                                 self.lock.release()
                                 
-                                self.lock.acquire()
                                 for client_receiver in self.clients:
                                     if(self.clients[client_receiver]['uid'] == receiver_id):
-                                        self.lock.release()
-                                        chat = Chat(receiver_id)
                                         
                                         #refresh chat and conversation for receiver
+                                        chat = Chat(receiver_id)
                                         chats = chat.getChats()
                                         
                                         self.lock.acquire()
@@ -215,7 +212,7 @@ class Client:
                                         self.lock.acquire()
                                         self.send_data(client_receiver, conversation)
                                         self.lock.release()
-                            
+
                                 print("[+] Chat & Conversation Refreshed. \n\n\n")
                                 continue
 

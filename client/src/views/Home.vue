@@ -39,8 +39,7 @@
             <v-card-title>Chats</v-card-title>
             <v-card-text>
               <div v-if="isConnectedWS">
-                <v-list subheader v-if="chats.length">
-                  <v-subheader>Recent Chat</v-subheader>
+                <v-list v-if="chats.length">
                   <v-list-item v-for="chat in chats" :key="chat.id"
                   @click="startChat(chat.id)">
                     <v-list-item-content class="text-left">
@@ -60,45 +59,42 @@
           </v-card>
         </v-col>
         <v-col md="8" cols="12">
-          <v-card v-if="current_chat.length == 0">
-            <v-card-title>
-              WELCOME TO EMPTY CHAT
-            </v-card-title>
-            <v-card-text class="pa-5">
-                <v-icon x-large>
-                  mdi-chat
-                </v-icon>
-                <h3>
-                  Please choose a message to start the conversation
-                </h3>
-            </v-card-text>
-          </v-card>
-          <v-card v-else>
-            <v-card-title>
-              {{ current_chat.username }}
-            </v-card-title>
+            <v-card>
+              <v-card-title>
+                {{ current_chat.username ? current_chat.username : 'WELCOME TO EMPTY CHAT' }}
+              </v-card-title>
+              <v-divider></v-divider>
+              <v-card-text 
+                class="pa-5" 
+                id="conversations-container"
+                style="height: 300px; overflow: auto; background-color: #ddd; padding: 15px;">
+                <v-row v-for="(conversation, index) in conversations" :key="index">
+                    <v-col cols="12" class="ma-n2" v-if="conversation.sender == current_chat.id">
+                        <div class="chat-buble left">
+                          <span class="text">
+                            {{ conversation.msg }}
+                          </span>
+                        </div>
+                    </v-col>
+                    <v-col cols="12" class="ma-n2" v-else>
+                      <div class="chat-buble right">
+                        <span class="text" >
+                          {{ conversation.msg }}
+                        </span>
+                      </div>
+                    </v-col>
+                </v-row>
+                <div v-if="conversations.length == 0">
+                  <v-icon x-large>
+                      mdi-chat
+                    </v-icon>
+                    <h3>
+                      Please choose a message to start the conversation
+                    </h3>
+                </div>
+              </v-card-text>
             <v-divider></v-divider>
-            <v-card-text class="pa-5"
-            style="height: 300px; overflow: auto; background-color: #ddd">
-            <v-row v-for="conversation in conversations" :key="conversation.time">
-                <v-col cols="12" class="ma-n2" v-if="conversation.sender == current_chat.id">
-                    <div class="chat-buble left">
-                      <span class="text">
-                        {{ conversation.msg }}
-                      </span>
-                    </div>
-                </v-col>
-                <v-col cols="12" class="ma-n2" v-else>
-                  <div class="chat-buble right">
-                    <span class="text">
-                      {{ conversation.msg }}
-                    </span>
-                  </div>
-                </v-col>
-            </v-row>
-            </v-card-text>
-            <v-divider></v-divider>
-            <v-card-actions>
+            <v-card-actions v-if="conversations.length > 0">
                 <v-text-field
                 placeholder="Type a message..."
                 outlined
@@ -137,6 +133,7 @@
 <script>
 // @ is an alias to /src
 // import HelloWorld from '@/components/HelloWorld.vue';
+import $ from 'jquery';
 
 export default {
   name: 'home',
@@ -147,6 +144,7 @@ export default {
     message: '',
     chats: [],
     conversations: [],
+    sendingChat:false,
   }),
   created() {
     this.getUsers();
@@ -166,27 +164,54 @@ export default {
       });
     },
     startChat(id) {
-      this.axios.post('/user', { id }).then((r) => {
-        this.current_chat = r.data;
-        this.getConversation();
-      }).catch(() => {
-        this.current_chat = [];
-        alert('failed to start conversation');
-      });
+      if (this.current_chat.id !== id) {
+        this.axios.post('/user', { id }).then((r) => {
+          this.current_chat = r.data;
+          this.getConversation();
+        }).catch(() => {
+          this.current_chat = [];
+          alert('failed to start conversation');
+        });
+      }
     },
     getConversation() {
       this.$store.dispatch('sendMsgWS', { request: 'conversations', userId: this.current_chat.id });
     },
-    sendChat() {
+    async sendChat() {
       if (this.message !== '') {
-        this.$store.dispatch('sendMsgWS', {
-          request: 'send_chat',
-          userId: this.current_chat.id,
-          message: this.message,
-        });
+        let maxLength = 4000
+        let partMsg = Math.ceil(this.message.length / maxLength)
+        if(partMsg > 1){
+          alert('the message is too long, the message will send in multiple parts. ')
+        }
+        for (let i = 0; i <= partMsg; i++){
+            let message = this.message.substr(i*maxLength, maxLength*(i+1))
+            this.$store.dispatch('sendMsgWS', {
+              request: 'send_chat',
+              userId: this.current_chat.id,
+              message: message,
+            });
+            await this.dynamicWatch(this,() => this.serverWSmsg);
+        }
+
         this.message = '';
       }
     },
+    dynamicWatch(vm, fn){
+      return new Promise(resolve => {
+        const watcher = vm.$watch(fn, (newVal) => {
+          resolve(newVal);
+          watcher(); // cleanup;
+        });
+      });
+    },
+    focusNewChat(){
+      let el = $('#conversations-container')
+      if(el.length) {
+        var h = el.get(0).scrollHeight;
+        el.scrollTop(h);
+      }
+    }
   },
   computed: {
     isConnectedWS() {
@@ -195,6 +220,9 @@ export default {
     serverWSmsg() {
       return this.$store.getters.serverWSmsg;
     },
+    sending_chat(){
+      return this.sendingChat
+    }
   },
   watch: {
     isConnectedWS: {
@@ -212,6 +240,10 @@ export default {
         if (msg.data) {
           if (JSON.parse(msg.data).conversations) {
             this.conversations = JSON.parse(msg.data).conversations;
+            this.sendingChat = false
+            this.$nextTick(() => {
+              this.focusNewChat()
+            })
           } else if (JSON.parse(msg.data).chats) {
             this.chats = JSON.parse(msg.data).chats;
           }

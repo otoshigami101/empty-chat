@@ -64,7 +64,7 @@ export default {
       this.axios.post('/login', this.form).then((r) => {
         if (r.data.jwt_token) {
           localStorage.setItem('jwt_token', r.data.jwt_token);
-          this.$router.push('/');
+          window.location.href = '/';
         }
       });
     },

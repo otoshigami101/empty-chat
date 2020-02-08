@@ -6,16 +6,10 @@ import json
 import re
 import requests
 
-
 class Chat:
 
     chat_dir = 'chats'
     api_server = 'http://localhost:8081'
-    api_headers = {
-        "Host": "localhost:8081",
-        "Origin": "ws://localhost:4444",
-        "X-Requested-With": "XMLHttpRequest",
-    }
 
     def __init__(self, uid):
         self.uid = uid
@@ -41,7 +35,7 @@ class Chat:
                         # get user data from filename as id user
                         user = requests.post(self.api_server+'/user', json={
                             "id": int(re.sub('.txt', '', filename))
-                        }, headers=self.api_headers).json()
+                        }).json()
 
                         chats.append(
                             {'id': user['id'], 'name': user['name'], 'username': user['username']})
@@ -59,11 +53,13 @@ class Chat:
             with open(filepath, 'r') as file:
                 chat = file.readline().split(',')
                 while chat:
+
                     conversations.append({
                         'time': chat[0],
                         'sender': chat[1],
-                        'msg': chat[2],
+                        'msg': re.sub(chat[0] + ',' + chat[1] + ',','',",".join(chat))
                     })
+
                     chat = file.readline().split(',')
 
         except:
@@ -71,11 +67,10 @@ class Chat:
         
         return json.dumps({'conversations': conversations})
         
-
     def sendChat(self, receiverId, message):
         if self.initChat(self.uid) & self.initChat(receiverId):
             try:
-                timestamp = datetime.today().strftime('%Y%m%d% %H:%M:%S')
+                timestamp = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
 
                 # write to sender file & receiver id as filename
                 with open(self.chat_dir+'/'+self.uid+'/'+receiverId+".txt", 'a') as f:
