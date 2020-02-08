@@ -1,7 +1,7 @@
 <template>
   <div class="home">
     <!-- <img alt="Vue logo" src="../assets/logo.png"> -->
-    <v-container fill-height>
+    <v-container fill-height v-if="isConnectedWS">
       <v-row justify="center">
         <v-col cols="12">
           <v-card>
@@ -38,7 +38,7 @@
           <v-card>
             <v-card-title>Chats</v-card-title>
             <v-card-text>
-              <div v-if="isConnectedWS">
+              <div>
                 <v-list v-if="chats.length">
                   <v-list-item v-for="chat in chats" :key="chat.id"
                   @click="startChat(chat.id)">
@@ -107,6 +107,14 @@
           </v-card>
         </v-col>
       </v-row>
+    </v-container>
+    <v-container v-else>
+      <b>
+        Server disconnected.
+      </b>
+      <span>
+        Reconnecting to server ...
+      </span>
     </v-container>
   </div>
 </template>

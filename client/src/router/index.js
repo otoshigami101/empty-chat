@@ -46,6 +46,9 @@ router.beforeEach(async (request, from, next) => {
 
   Vue.use(VueNativeSock, `ws://localhost:4444?uid=${store.state.auth.user.id}`, {
     store,
+    reconnection: true, // (Boolean) whether to reconnect automatically (false)
+    reconnectionAttempts: Infinity, // (Number) number of reconnection attempts before giving up (Infinity),
+    reconnectionDelay: 3000, // (Number) how long to initially wait before attempting a new (1000)
   });
 
   next();

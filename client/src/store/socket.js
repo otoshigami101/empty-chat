@@ -5,12 +5,14 @@ const socket = {
     socket: {
       isConnected: false,
       message: '',
+      reconnecting: 0,
       reconnectError: false,
     },
   },
   mutations: {
     SOCKET_ONOPEN(state, event) {
       Vue.prototype.$socket = event.currentTarget;
+      state.reconnecting = 0
       state.socket.isConnected = true;
     },
     SOCKET_ONCLOSE(state) {
@@ -25,7 +27,7 @@ const socket = {
     },
     // mutations for reconnect methods
     SOCKET_RECONNECT(state, count) {
-      console.info(state, count);
+      console.log(state, count)
     },
     SOCKET_RECONNECT_ERROR(state) {
       state.socket.reconnectError = true;
