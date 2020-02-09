@@ -18,7 +18,7 @@ class Listener:
         s.bind((self.host, self.port))
         s.listen(0)
 
-        print("==== Server Started. ====")
+        print("==== Waiting for incoming connections ====")
         
         while 1:
             conn, addr = s.accept()

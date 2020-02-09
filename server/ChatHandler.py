@@ -48,7 +48,7 @@ class Chat:
             print('[-] Exception : '+str(e))
             return "[-] failed to get chats"
 
-        return json.dumps({'chats': chats})
+        return chats
 
     def setChatStatus(self, dir_name, userId, status):
         try:
@@ -58,7 +58,7 @@ class Chat:
             elif(status == 'read' and os.path.exists(self.chat_dir+'/'+dir_name+'/'+userId+'-sent.txt')):
                 os.rename(self.chat_dir+'/'+dir_name+'/'+userId+'-sent.txt',
                           self.chat_dir+'/'+dir_name+'/'+userId+'-read.txt')
-                
+
         except Exception as e:
             print("[-] error when set read file. exeption : "+str(e))
 
@@ -91,9 +91,9 @@ class Chat:
 
         except:
             pass
-        
+
         self.setChatStatus(self.uid, userId, 'read')
-        return json.dumps({'conversations': conversations})
+        return conversations
 
     def sendChat(self, receiverId, message):
         if self.initChat(self.uid) & self.initChat(receiverId):

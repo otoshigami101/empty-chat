@@ -7,6 +7,7 @@ from hashlib import sha1
 from ChatHandler import Chat
 import requests
 
+
 class Client:
     websocket_answer = (
         'HTTP/1.1 101 Switching Protocols',
@@ -106,15 +107,25 @@ class Client:
         except:
             print("error sending to a client")
 
-    def chat_broadcast(self):
-        for client in self.clients:
-            try:
-                # broadcast chat
-                chat = Chat(self.clients[client]['uid'])
-                chats = chat.getChats()
-                self.send_data(client, chats)
-            except Exception as e:
-                print("[-] Failed to send chat broadcast : "+str(e))
+    def setConnectedStat(self, uid, status):
+        for conn_client in self.clients:
+            if self.clients[conn_client]['current_conversation'] == uid:
+                chat = Chat(self.clients[conn_client]['uid'])
+                msg = json.dumps({
+                    'chat': chat.getChat(uid),
+                    'isConnected': status
+                })
+                self.send_data(conn_client, msg)
+                break
+
+    def getConnectedStat(self, uid):
+        status = False
+        for conn_client in self.clients:
+            if self.clients[conn_client]['uid'] == uid:
+                status = True
+                break
+        
+        return status
 
     def handShake(self, client):
         data = client.recv(4096)
@@ -155,24 +166,31 @@ class Client:
     def handler(self, client, addr):
         if(self.handShake(client)):
             try:
+                self.setConnectedStat(self.clients[client]['uid'], True)
                 while 1:
+
                     recv = self.recv_data(client)
-                    
                     data = json.loads(recv)
                     chat = Chat(self.clients[client]['uid'])
-                    self.lock.acquire()
 
+                    self.lock.acquire()
                     if data['request'] == 'chats':
                         print('[+] Request chats from '+str(addr))
-                        response = chat.getChats()
+                        response = json.dumps({
+                            'chats': chat.getChats()
+                        })
+
                     elif data['request'] == 'conversations':
                         print('[+] Request conversations from '+str(addr))
                         if data['userId']:
-                            chat.getChat(data['userId'])
-                            response = chat.getChat(data['userId'])
+                            response = json.dumps({
+                                'chat': chat.getChat(data['userId']),
+                                'isConnected': self.getConnectedStat(data['userId'])
+                            })
                             self.clients[client]['current_conversation'] = data['userId']
                         else:
-                            response = json.dumps({ "errors" : "Invalid Request"})
+                            response = json.dumps(
+                                {"errors": "Invalid Request"})
 
                     elif data['request'] == 'send_chat':
                         if data['userId'] and data['message']:
@@ -182,62 +200,75 @@ class Client:
 
                             if "failed" not in response:
                                 self.lock.release()
-                                
+
                                 print('[+] Refreshing chat & conversation')
                                 sender_id = self.clients[client]['uid']
                                 receiver_id = data['userId']
-                                
-                                #refresh conversation and chats for sender
-                                conversation = chat.getChat(receiver_id)
+
+                                # refresh conversation and chats for sender
+                                conversation = json.dumps({
+                                    'chat': chat.getChat(receiver_id),
+                                    'isConnected': self.getConnectedStat(receiver_id)
+                                })
                                 self.lock.acquire()
                                 self.send_data(client, conversation)
                                 self.lock.release()
 
-                                chats = chat.getChats()
+                                chats = json.dumps({
+                                    'chats': chat.getChats()
+                                })
                                 self.lock.acquire()
                                 self.send_data(client, chats)
                                 self.lock.release()
-                                
+
                                 for client_receiver in self.clients:
                                     if(self.clients[client_receiver]['uid'] == receiver_id):
-                                        
-                                        #refresh conversation & chats for receiver
+
+                                        # refresh conversation & chats for receiver
                                         chat = Chat(receiver_id)
-                                        
                                         if(self.clients[client_receiver]['current_conversation'] == sender_id):
-                                            conversation = chat.getChat(sender_id)
+                                            conversation = json.dumps({
+                                                'chat': chat.getChat(sender_id),
+                                                'isConnected': self.getConnectedStat(sender_id)
+                                            })
                                             self.lock.acquire()
-                                            self.send_data(client_receiver, conversation)
+                                            self.send_data(
+                                                client_receiver, conversation)
                                             self.lock.release()
 
-                                        
-                                        chats = chat.getChats()
+                                        chats = json.dumps({
+                                            'chats': chat.getChats()
+                                        })
                                         self.lock.acquire()
                                         self.send_data(client_receiver, chats)
                                         self.lock.release()
-                                        
 
-                                print("[+] Chat & Conversation Refreshed. \n\n\n")
+                                        break
+
+                                print(
+                                    "[+] Chat & Conversation Refreshed. \n\n\n")
                                 continue
 
                             else:
-                                response = json.dumps({ "errors" : "Failed to send chat."})    
+                                response = json.dumps(
+                                    {"errors": "Failed to send chat."})
                         else:
-                            response = json.dumps({ "errors" : "Invalid Request"})
+                            response = json.dumps(
+                                {"errors": "Invalid Request"})
+                    
                     else:
-                        response = json.dumps({ "errors" : "Invalid Request"})
-
+                        response = json.dumps({"errors": "Invalid Request"})
                     self.lock.release()
-
-                    self.lock.acquire()
+               
                     self.send_data(client, response)
-                    self.lock.release()
 
             except Exception as e:
                 print("[-] Exception : "+str(e))
+                self.setConnectedStat(self.clients[client]['uid'], False) 
                 self.lock.acquire()
                 del self.clients[client]
                 self.lock.release()
+
 
         print("[-] Client Closed : "+str(addr))
         client.close()
