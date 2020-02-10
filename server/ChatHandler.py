@@ -50,6 +50,18 @@ class Chat:
 
         return chats
 
+    def getUsers(self, clients):
+        users = requests.get(self.api_server+'/users?except='+self.uid).json()['users']
+        for user in users:
+            user['connected'] = False
+            for client in clients:
+                if user['id'] == clients[client]['uid']:
+                    user['connected'] = True
+                    break
+                    
+        
+        return users
+
     def setChatStatus(self, dir_name, userId, status):
         try:
             if(status == 'sent' and os.path.exists(self.chat_dir+'/'+dir_name+'/'+userId+'-read.txt')):

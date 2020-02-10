@@ -14,7 +14,7 @@
             $this->connection = mysqli_connect($host,$user,$pass,$db);
 
             if(!$this->connection){
-                echo "FAILED TO CONNECT : ".mysqli_connect_error();
+                echo "FAILED TO CONNECT DATABASE : ".mysqli_connect_error();
                 exit();
             }
         }

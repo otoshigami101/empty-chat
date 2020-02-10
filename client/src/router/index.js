@@ -39,7 +39,6 @@ router.beforeEach(async (request, from, next) => {
 
   await store.dispatch('auth/check');
 
-
   if (AuthRequired && !store.state.auth.isLogin) {
     next('/login');
   }

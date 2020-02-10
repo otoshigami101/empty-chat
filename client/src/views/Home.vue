@@ -16,13 +16,19 @@
               <div v-show="show_user">
                 <v-card-text>
                   <v-list v-if="users.length > 0">
-                    <v-list-item @click="startChat(user.id)" v-for="user in users" :key="user.id">
+                    <v-list-item v-for="user in users" :key="user.id" @click="startChat(user.id)">
                       <v-list-item-content class="text-left">
                         <v-list-item-title v-text="user.username"></v-list-item-title>
                       </v-list-item-content>
+                      <v-list-item-icon>
+                        <v-icon x-small :color="user.connected ? 'green' : 'grey'">
+                          mdi-circle
+                        </v-icon>
+                        {{ user.connected ? 'online':'offline' }}
+                      </v-list-item-icon>
                     </v-list-item>
                   </v-list>
-                  <div class="text-center" v-else>No chats found.</div>
+                  <div class="text-center" v-else>No users found.</div>
                 </v-card-text>
               </div>
             </v-expand-transition>
@@ -144,24 +150,12 @@ export default {
     conversations: [],
     sendingChat: false
   }),
-  created() {
-    this.getUsers();
-  },
   methods: {
     getChats() {
       this.$store.dispatch("sendMsgWS", { request: "chats" });
     },
     getUsers() {
-      this.axios
-        .get("/users", {
-          params: { except: this.$store.state.auth.user.id }
-        })
-        .then(r => {
-          this.users = r.data.users;
-        })
-        .catch(e => {
-          alert(JSON.stringify(e));
-        });
+      this.$store.dispatch("sendMsgWS", { request: "users" });
     },
     startChat(id) {
       if (this.current_chat.id !== id) {
@@ -189,7 +183,7 @@ export default {
         let partMsg = Math.ceil(this.message.length / maxLength);
         if (partMsg > 1) {
           alert(
-            "the message is too long, the message will send in multiple parts. "
+            "the message is too long, message will send in multiple parts. "
           );
         }
         for (let i = 0; i <= partMsg; i++) {
@@ -232,8 +226,10 @@ export default {
   watch: {
     isConnectedWS: {
       immediate: true,
-      handler(connected) {
+      async handler(connected) {
         if (connected) {
+          this.getUsers();
+          await this.dynamicWatch(this, () => this.serverWSmsg);
           this.getChats();
         }
       }
@@ -252,6 +248,8 @@ export default {
             }
           } else if (JSON.parse(msg.data).chats) {
             this.chats = JSON.parse(msg.data).chats;
+          } else if(JSON.parse(msg.data).users){
+            this.users = JSON.parse(msg.data).users
           }
         }
       }

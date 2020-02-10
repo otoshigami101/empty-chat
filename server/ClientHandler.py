@@ -180,6 +180,12 @@ class Client:
                             'chats': chat.getChats()
                         })
 
+                    elif data['request'] == 'users':
+                        print('[+] Request users from '+str(addr))
+                        response = json.dumps({
+                            'users' : chat.getUsers(self.clients)
+                        })
+                        
                     elif data['request'] == 'conversations':
                         print('[+] Request conversations from '+str(addr))
                         if data['userId']:
