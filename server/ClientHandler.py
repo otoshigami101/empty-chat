@@ -293,6 +293,8 @@ class Client:
 
             except Exception as e:
                 print("[-] Exception : "+str(e))
+                print("[-] Closing Client ... "+str(addr))
+                
                 uid = self.clients[client]['uid']
                 self.lock.acquire()
                 del self.clients[client]
