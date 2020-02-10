@@ -38,6 +38,9 @@
             </v-card>
           </v-col>
         </v-row>
+        <v-snackbar v-model="snackbar" :timeout="3000">
+            {{ snackbar_text }}
+        </v-snackbar>
     </v-container>
 </template>
 <style scoped>
@@ -53,6 +56,8 @@ export default {
       username: '',
       password: '',
     },
+    snackbar: false,
+    snackbar_text: '',
   }),
   beforeCreate() {
     if (this.$store.state.auth.isLogin) {
@@ -65,6 +70,9 @@ export default {
         if (r.data.jwt_token) {
           localStorage.setItem('jwt_token', r.data.jwt_token);
           window.location.href = '/';
+        }else{
+          this.snackbar = true;
+          this.snackbar_text = r.data.msg
         }
       });
     },

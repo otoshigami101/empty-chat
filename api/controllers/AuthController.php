@@ -43,7 +43,7 @@ class AuthController extends Controller
             ]);
             
         }else{
-            echo json_encode(['msg' => 'Login Failed.']);
+            echo json_encode(['msg' => 'The username and password you entered did not match our records. Please double-check and try again.']);
         }
     } 
     
