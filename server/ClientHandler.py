@@ -109,14 +109,24 @@ class Client:
 
     def setConnectedStat(self, uid, status):
         for conn_client in self.clients:
+            chat = Chat(self.clients[conn_client]['uid'])
             if self.clients[conn_client]['current_conversation'] == uid:
-                chat = Chat(self.clients[conn_client]['uid'])
                 msg = json.dumps({
                     'chat': chat.getChat(uid),
                     'isConnected': status
                 })
+                self.lock.acquire()
                 self.send_data(conn_client, msg)
-                break
+                self.lock.release()
+            
+            
+            resp = json.dumps({
+                'users' : chat.getUsers(self.clients)
+            })
+
+            self.lock.acquire()
+            self.send_data(conn_client, resp)
+            self.lock.release()
 
     def getConnectedStat(self, uid):
         status = False
@@ -283,11 +293,11 @@ class Client:
 
             except Exception as e:
                 print("[-] Exception : "+str(e))
-                self.setConnectedStat(self.clients[client]['uid'], False) 
+                uid = self.clients[client]['uid']
                 self.lock.acquire()
                 del self.clients[client]
                 self.lock.release()
-
+                self.setConnectedStat(uid, False) 
 
         print("[-] Client Closed : "+str(addr))
         client.close()
