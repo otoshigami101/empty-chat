@@ -44,7 +44,7 @@
                   <v-list-item
                     v-for="chat in chats"
                     :key="chat.id"
-                    @click="startChat(chat.id); chat.status = 'read'"
+                    @click="startChat(chat.id);"
                   >
                     <v-list-item-content class="text-left">
                       <v-list-item-title v-text="chat.username"></v-list-item-title>
@@ -170,6 +170,7 @@ export default {
     },
     startChat(id) {
       if (this.current_chat.id !== id) {
+        this.chats.map(item => item.id == id?item.status = 'read':'')
         this.axios
           .post("/user", { id })
           .then(r => {
