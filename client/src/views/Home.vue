@@ -4,7 +4,6 @@
     <v-container fill-height v-if="isConnectedWS">
       <v-row justify="center">
         <v-col cols="12">
-          <button type="button" @click="notify">Show notification</button>
           <v-card>
             <v-card-title>
               List Users
@@ -22,9 +21,7 @@
                         <v-list-item-title v-text="user.username"></v-list-item-title>
                       </v-list-item-content>
                       <v-list-item-icon>
-                        <v-icon x-small :color="user.connected ? 'green' : 'grey'">
-                          mdi-circle
-                        </v-icon>
+                        <v-icon x-small :color="user.connected ? 'green' : 'grey'">mdi-circle</v-icon>
                         {{ user.connected ? 'online':'offline' }}
                       </v-list-item-icon>
                     </v-list-item>
@@ -41,11 +38,7 @@
             <v-card-text>
               <div>
                 <v-list v-if="chats.length">
-                  <v-list-item
-                    v-for="chat in chats"
-                    :key="chat.id"
-                    @click="startChat(chat.id);"
-                  >
+                  <v-list-item v-for="chat in chats" :key="chat.id" @click="startChat(chat.id);">
                     <v-list-item-content class="text-left">
                       <v-list-item-title v-text="chat.username"></v-list-item-title>
                     </v-list-item-content>
@@ -66,11 +59,12 @@
           <v-card>
             <v-card-title>
               {{ current_chat.username ? current_chat.username : 'WELCOME TO EMPTY CHAT' }}
-              <v-icon class="mx-2"
-                :color="conversations.isConnected ? 'green' : 'gray'" 
-                x-small v-if="current_chat.username">
-                mdi-circle
-              </v-icon>
+              <v-icon
+                class="mx-2"
+                :color="conversations.isConnected ? 'green' : 'gray'"
+                x-small
+                v-if="current_chat.username"
+              >mdi-circle</v-icon>
             </v-card-title>
             <v-divider></v-divider>
             <v-card-text
@@ -158,19 +152,23 @@ export default {
     getUsers() {
       this.$store.dispatch("sendMsgWS", { request: "users" });
     },
-    notify (id, username, msg) {
+    notify(id, username, msg) {
       let self = this;
-      this.$notification.show(username, {
-        body: msg
-      }, {
-        onclick: function(){
-          self.startChat(id);
+      this.$notification.show(
+        username,
+        {
+          body: msg
+        },
+        {
+          onclick: function() {
+            self.startChat(id);
+          }
         }
-      })
+      );
     },
     startChat(id) {
       if (this.current_chat.id !== id) {
-        this.chats.map(item => item.id == id?item.status = 'read':'')
+        this.chats.map(item => (item.id == id ? (item.status = "read") : ""));
         this.axios
           .post("/user", { id })
           .then(r => {
@@ -243,7 +241,7 @@ export default {
           this.getUsers();
           await this.dynamicWatch(this, () => this.serverWSmsg);
           this.getChats();
-          this.$notification.requestPermission()
+          this.$notification.requestPermission();
         }
       }
     },
@@ -261,10 +259,10 @@ export default {
             }
           } else if (JSON.parse(msg.data).chats) {
             this.chats = JSON.parse(msg.data).chats;
-          } else if(JSON.parse(msg.data).users){
-            this.users = JSON.parse(msg.data).users
+          } else if (JSON.parse(msg.data).users) {
+            this.users = JSON.parse(msg.data).users;
           } else if (JSON.parse(msg.data).newMsg) {
-            let newMsg = JSON.parse(msg.data).newMsg
+            let newMsg = JSON.parse(msg.data).newMsg;
             this.notify(newMsg.id, newMsg.username, newMsg.msg);
           }
         }
