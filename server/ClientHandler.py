@@ -229,10 +229,9 @@ class Client:
 
                                 for client_receiver in self.clients:
                                     if(self.clients[client_receiver]['uid'] == receiver_id):
-
-                                        # refresh conversation & chats for receiver
                                         chat = Chat(receiver_id)
                                         if(self.clients[client_receiver]['current_conversation'] == sender_id):
+                                            # refresh conversation for receiver
                                             conversation = json.dumps({
                                                 'chat': chat.getChat(sender_id),
                                                 'isConnected': self.getConnectedStat(sender_id)
@@ -241,7 +240,21 @@ class Client:
                                             self.send_data(
                                                 client_receiver, conversation)
                                             self.lock.release()
+                                        else:
+                                            #send new msg notif for receiver
+                                            user = chat.getUser(receiver_id)
+                                            newMsg = json.dumps({
+                                                'newMsg' : {
+                                                    'id': sender_id,
+                                                    'username': user['username'],
+                                                    'msg': data['message']
+                                                }     
+                                            })
+                                            self.lock.acquire()
+                                            self.send_data(client_receiver,newMsg)
+                                            self.lock.release()
 
+                                        # refresh chats for receiver
                                         chats = json.dumps({
                                             'chats': chat.getChats()
                                         })

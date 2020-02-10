@@ -4,6 +4,7 @@
     <v-container fill-height v-if="isConnectedWS">
       <v-row justify="center">
         <v-col cols="12">
+          <button type="button" @click="notify">Show notification</button>
           <v-card>
             <v-card-title>
               List Users
@@ -157,6 +158,16 @@ export default {
     getUsers() {
       this.$store.dispatch("sendMsgWS", { request: "users" });
     },
+    notify (id, username, msg) {
+      let self = this;
+      this.$notification.show(username, {
+        body: msg
+      }, {
+        onclick: function(){
+          self.startChat(id);
+        }
+      })
+    },
     startChat(id) {
       if (this.current_chat.id !== id) {
         this.axios
@@ -231,6 +242,7 @@ export default {
           this.getUsers();
           await this.dynamicWatch(this, () => this.serverWSmsg);
           this.getChats();
+          this.$notification.requestPermission()
         }
       }
     },
@@ -250,6 +262,9 @@ export default {
             this.chats = JSON.parse(msg.data).chats;
           } else if(JSON.parse(msg.data).users){
             this.users = JSON.parse(msg.data).users
+          } else if (JSON.parse(msg.data).newMsg) {
+            let newMsg = JSON.parse(msg.data).newMsg
+            this.notify(newMsg.id, newMsg.username, newMsg.msg);
           }
         }
       }

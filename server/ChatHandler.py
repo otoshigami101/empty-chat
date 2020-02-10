@@ -33,10 +33,7 @@ class Chat:
                 for filename in files:
                     if filename.endswith('.txt'):
                         # get user data from filename as id user
-                        user = requests.post(self.api_server+'/user', json={
-                            "id": int(re.sub('.txt', '', filename.split('-')[0]))
-                        }).json()
-
+                        user = self.getUser(int(re.sub('.txt', '', filename.split('-')[0])))
                         chats.append({
                             'id': user['id'],
                             'name': user['name'],
@@ -106,6 +103,13 @@ class Chat:
 
         self.setChatStatus(self.uid, userId, 'read')
         return conversations
+
+    def getUser(self, userId):
+        user = requests.post(self.api_server+'/user', json={
+            "id": userId
+        }).json()
+        
+        return user
 
     def sendChat(self, receiverId, message):
         if self.initChat(self.uid) & self.initChat(receiverId):

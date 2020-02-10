@@ -1,6 +1,8 @@
 import Vue from 'vue';
 import axios from 'axios';
 import VueAxios from 'vue-axios';
+import VueNativeNotification from 'vue-native-notification'
+
 import App from './App.vue';
 import router from './router';
 import store from './store/index';
@@ -11,12 +13,18 @@ import '@mdi/font/css/materialdesignicons.css';
 axios.defaults.baseURL = 'http://localhost:8081';
 Vue.config.productionTip = false;
 Vue.use(VueAxios, axios);
+Vue.use(VueNativeNotification, {
+  // Automatic permission request before
+  // showing notification (default: true)
+  requestOnNotify: true
+})
 
 Vue.prototype.$app = new Vue({
   router,
   store,
   vuetify,
   render: h => h(App),
+  
   data() {
     return {
       windowHeight: 0,
