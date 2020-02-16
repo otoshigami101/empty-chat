@@ -1,5 +1,13 @@
 # empty-chat
 
+### ========== API SERVER =========
+
+```
+php -S 127.0.0.1:8081
+```
+
+### ========== CLIENT APP =========
+
 ## Project setup
 ```
 npm install
@@ -15,10 +23,10 @@ npm run serve
 npm run build
 ```
 
-### Lints and fixes files
+### ========== SERVER APP =========
+
 ```
-npm run lint
+python Listener.py
 ```
 
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
+

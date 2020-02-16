@@ -136,6 +136,7 @@ import $ from "jquery";
 
 export default {
   name: "home",
+  props:['notifHandler'],
   data: () => ({
     show_user: false,
     users: [],
@@ -145,6 +146,17 @@ export default {
     conversations: [],
     sendingChat: false
   }),
+  async created(){
+    if(this.isConnectedWS){
+      this.getUsers();
+      await this.dynamicWatch(this, () => this.serverWSmsg);
+      this.getChats();
+      await this.dynamicWatch(this, () => this.serverWSmsg);
+      if(this.notifHandler){
+          this.startChat(this.notifHandler)
+      }
+    }
+  },
   methods: {
     getChats() {
       this.$store.dispatch("sendMsgWS", { request: "chats" });
@@ -153,22 +165,22 @@ export default {
       this.$store.dispatch("sendMsgWS", { request: "users" });
     },
     notify(id, username, msg) {
-      let self = this;
+      const self = this;
       this.$notification.show(
         username,
         {
           body: msg
         },
         {
-          onclick: function() {
+          onclick() {
             self.startChat(id);
           }
         }
       );
     },
     startChat(id) {
+      this.chats.map(item => (item.id == id ? (item.status = "read") : ""));
       if (this.current_chat.id !== id) {
-        this.chats.map(item => (item.id == id ? (item.status = "read") : ""));
         this.axios
           .post("/user", { id })
           .then(r => {
@@ -189,19 +201,22 @@ export default {
     },
     async sendChat() {
       if (this.message !== "") {
-        let maxLength = 4000;
-        let partMsg = Math.ceil(this.message.length / maxLength);
+        const maxLength = 4000;
+        const partMsg = Math.ceil(this.message.length / maxLength);
         if (partMsg > 1) {
           alert(
             "the message is too long, message will send in multiple parts. "
           );
         }
         for (let i = 0; i <= partMsg; i++) {
-          let message = this.message.substr(i * maxLength, maxLength * (i + 1));
+          const message = this.message.substr(
+            i * maxLength,
+            maxLength * (i + 1)
+          );
           this.$store.dispatch("sendMsgWS", {
             request: "send_chat",
             userId: this.current_chat.id,
-            message: message
+            message
           });
           await this.dynamicWatch(this, () => this.serverWSmsg);
         }
@@ -218,9 +233,9 @@ export default {
       });
     },
     focusNewChat() {
-      let el = $("#conversations-container");
+      const el = $("#conversations-container");
       if (el.length) {
-        var h = el.get(0).scrollHeight;
+        const h = el.get(0).scrollHeight;
         el.scrollTop(h);
       }
     }
@@ -247,7 +262,6 @@ export default {
     },
     serverWSmsg: {
       immediate: true,
-      deep: true,
       handler(msg) {
         if (msg.data) {
           if (JSON.parse(msg.data).chat) {
@@ -262,7 +276,7 @@ export default {
           } else if (JSON.parse(msg.data).users) {
             this.users = JSON.parse(msg.data).users;
           } else if (JSON.parse(msg.data).newMsg) {
-            let newMsg = JSON.parse(msg.data).newMsg;
+            const { newMsg } = JSON.parse(msg.data);
             this.notify(newMsg.id, newMsg.username, newMsg.msg);
           }
         }

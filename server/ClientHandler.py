@@ -285,6 +285,11 @@ class Client:
                             response = json.dumps(
                                 {"errors": "Invalid Request"})
                     
+                    elif data['request'] == 'empty-chat':
+                        
+                        self.clients[client]['current_conversation'] = ''
+                        response = "The chat has been cleared."
+
                     else:
                         response = json.dumps({"errors": "Invalid Request"})
                     self.lock.release()
